@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>SmartGrain Ultimate</title>
+    <style>
+        /* --- VARIABLES --- */
+        :root {
+            --primary: #FFD60A; 
+            --primary-dim: rgba(255, 214, 10, 0.15);
+            --bg: #050505;
+            --surface: #141414;
+            --border: #333;
+            --text-main: #FFF;
+            --text-muted: #888;
+            --shadow: 0 10px 40px rgba(0,0,0,0.8);
+        }
+
+        /* --- RESET --- */
+        body { margin: 0; padding: 0; font-family: 'Inter', -apple-system, sans-serif; background: var(--bg); color: var(--text-main); padding-bottom: 110px; -webkit-font-smoothing: antialiased; }
+        * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+        /* --- TOP NAV (Millet Switcher) --- */
+        .millet-nav { 
+            display: flex; gap: 10px; padding: 15px 20px; 
+            background: rgba(20,20,20,0.9); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px);
+            position: sticky; top: 0; z-index: 100; border-bottom: 1px solid var(--border);
+        }
+        .nav-btn { 
+            flex: 1; padding: 10px; background: transparent; color: #555; 
+            border: 1px solid #333; border-radius: 12px; font-size: 0.7rem; font-weight: 800; text-transform: uppercase; letter-spacing: 1px; cursor: pointer; transition: 0.3s; 
+        }
+        .nav-btn.active { background: var(--primary); color: #000; border-color: var(--primary); box-shadow: 0 0 15px var(--primary-dim); }
+
+        /* --- HERO SECTION --- */
+        .hero-section { text-align: center; padding: 30px 20px 10px 20px; }
+        .battle-badge { 
+            display: inline-flex; align-items: center; gap: 6px;
+            background: rgba(255, 59, 48, 0.15); color: #FF453A; border: 1px solid #FF453A;
+            padding: 6px 12px; border-radius: 20px; font-size: 0.7rem; font-weight: 900; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 15px;
+        }
+        .grain-title { font-size: 2.5rem; font-weight: 900; margin: 0; line-height: 1; letter-spacing: -1px; }
+        .grain-desc { color: var(--text-muted); font-size: 0.95rem; margin-top: 10px; line-height: 1.5; max-width: 90%; margin-left: auto; margin-right: auto; }
+
+        /* --- PAGE LAYOUT --- */
+        .page { display: none; opacity: 0; transform: translateY(10px); transition: 0.4s; padding: 0 20px; max-width: 500px; margin: 0 auto; }
+        .page.active { display: block; opacity: 1; transform: translateY(0); }
+
+        /* --- FERMENTATION ENGINE UI --- */
+        .bio-engine { 
+            background: var(--surface); border: 1px solid var(--border); border-radius: 24px; 
+            padding: 30px; margin-top: 25px; position: relative; overflow: hidden;
+        }
+        
+        .bio-status-row { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; }
+        .status-left { color: #555; } /* Dead */
+        .status-right { color: var(--primary); text-align: right; } /* Alive */
+
+        .timer-big { font-size: 3.5rem; font-weight: 800; text-align: center; font-variant-numeric: tabular-nums; letter-spacing: -2px; text-shadow: 0 0 30px rgba(0,0,0,0.5); }
+        .timer-label { text-align: center; font-size: 0.8rem; color: var(--text-muted); margin-top: -5px; margin-bottom: 20px; }
+
+        /* --- HORIZONTAL TIMELINE --- */
+        .timeline-section { margin-bottom: 30px; }
+        .progress-meta { display: flex; justify-content: space-between; font-size: 0.7rem; color: #666; font-weight: bold; margin-bottom: 5px; }
+        .pct-text { color: var(--primary); font-size: 1.2rem; font-weight: 900; }
+
+        .progress-track { position: relative; height: 8px; background: #222; border-radius: 10px; margin-bottom: 20px; }
+        .progress-fill { position: absolute; left: 0; top: 0; height: 100%; background: var(--primary); width: 0%; border-radius: 10px; transition: width 1s linear; box-shadow: 0 0 15px var(--primary); z-index: 2; }
+        .marker { position: absolute; top: -4px; width: 2px; height: 16px; background: #444; z-index: 1; }
+        
+        .stage-list { display: flex; flex-direction: column; gap: 8px; }
+        .stage-item { display: flex; align-items: center; gap: 10px; font-size: 0.8rem; color: #444; transition: 0.3s; }
+        .stage-item.active { color: #FFF; font-weight: bold; }
+        .stage-item.active .stage-dot { background: var(--primary); box-shadow: 0 0 8px var(--primary); border-color: var(--primary); }
+        .stage-dot { width: 10px; height: 10px; border-radius: 50%; border: 1px solid #444; flex-shrink: 0; transition: 0.3s; }
+        .stage-pct { font-size: 0.7rem; width: 35px; text-align: right; font-family: monospace; opacity: 0.5; }
+
+        /* --- NEW: HERO VS VILLAIN COMPARISON --- */
+        .hero-compare { display: flex; gap: 10px; margin-bottom: 25px; }
+        .compare-box { flex: 1; background: #000; padding: 15px; border-radius: 12px; border: 1px solid #333; text-align: center; }
+        .c-icon { font-size: 1.5rem; margin-bottom: 5px; display: block; }
+        .c-title { font-size: 0.7rem; text-transform: uppercase; font-weight: 800; color: #666; margin-bottom: 4px; }
+        .c-stat { font-size: 0.8rem; font-weight: bold; }
+        
+        /* Specific Styles for Villain/Hero */
+        .villain { border-color: #333; opacity: 0.6; }
+        .hero { border-color: var(--primary); background: rgba(255, 255, 255, 0.05); }
+        .hero .c-title { color: var(--primary); }
+        .hero .c-stat { color: #fff; }
+
+        /* Controls */
+        .btn-main { width: 100%; padding: 20px; background: var(--primary); color: #000; font-weight: 900; font-size: 1rem; border: none; border-radius: 16px; cursor: pointer; text-transform: uppercase; letter-spacing: 1px; box-shadow: 0 5px 20px var(--primary-dim); transition: 0.2s; }
+
+        /* --- INFO CARDS --- */
+        .info-card { background: var(--surface); border: 1px solid var(--border); border-radius: 20px; padding: 25px; margin-bottom: 20px; margin-top: 20px; }
+        .card-label { font-size: 0.7rem; color: var(--text-muted); font-weight: 800; letter-spacing: 1px; text-transform: uppercase; margin-bottom: 10px; display: block; }
+        .card-head { font-size: 1.5rem; font-weight: 900; margin-bottom: 10px; color: var(--primary); line-height: 1.1; }
+        .card-sub { font-size: 1.1rem; color: #fff; font-weight: bold; margin-bottom: 10px; display: block; }
+        .card-body { font-size: 0.95rem; line-height: 1.6; color: #ccc; }
+
+        /* --- GAME UI --- */
+        .game-box { background: #000; border: 1px solid #333; border-radius: 20px; height: 260px; display: flex; flex-direction: column; align-items: center; justify-content: center; position: relative; overflow: hidden; margin-top: 10px; }
+        .pacer-track { width: 90%; height: 2px; background: #333; position: relative; }
+        .pacer-ball { width: 24px; height: 24px; background: var(--primary); border-radius: 50%; position: absolute; top: -11px; left: 0; box-shadow: 0 0 15px var(--primary); }
+        .breath-ring { width: 100px; height: 100px; border: 3px solid var(--primary); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: 800; font-size: 0.8rem; }
+        .chew-bar-wrap { width: 80%; height: 8px; background: #333; border-radius: 10px; margin: 15px 0; }
+        .chew-fill { height: 100%; width: 0%; background: var(--primary); transition: width 0.2s; }
+
+        /* --- BOTTOM DOCK --- */
+        .dock { position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); width: 90%; max-width: 400px; background: rgba(30,30,30,0.9); backdrop-filter: blur(20px); border: 1px solid #444; border-radius: 30px; display: flex; padding: 15px; justify-content: space-between; z-index: 900; box-shadow: 0 10px 40px rgba(0,0,0,0.5); }
+        .dock-item { flex: 1; text-align: center; color: #666; font-size: 0.7rem; font-weight: 700; text-transform: uppercase; cursor: pointer; transition: 0.3s; }
+        .dock-item.active { color: var(--primary); text-shadow: 0 0 10px var(--primary-dim); }
+        .d-icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
+
+    </style>
+</head>
+<body>
+
+    <div class="millet-nav">
+        <button class="nav-btn active" id="tab-foxtail" onclick="switchMillet('foxtail')">Foxtail</button>
+        <button class="nav-btn" id="tab-ragi" onclick="switchMillet('ragi')">Ragi</button>
+        <button class="nav-btn" id="tab-jowar" onclick="switchMillet('jowar')">Jowar</button>
+    </div>
+
+    <div id="page-home" class="page active">
+        
+        <div class="hero-section">
+            <div class="battle-badge" id="battle-badge">⚔️ FIGHTS DIABETES</div>
+            <h1 class="grain-title" id="grain-title">Foxtail Gold</h1>
+            <p class="grain-desc" id="grain-desc">
+                Low GI Index. Slow release energy. The ultimate defense against blood sugar spikes.
+            </p>
+        </div>
+
+        <div class="bio-engine">
+            <div class="bio-status-row">
+                <span class="status-left" id="status-left">⚫ DORMANT</span>
+                <span class="status-right" id="status-right">🟢 ALIVE</span>
+            </div>
+
+            <div class="timeline-section">
+                <div class="progress-meta">
+                    <span>START</span>
+                    <span class="pct-text" id="pct-display">0%</span>
+                    <span>READY</span>
+                </div>
+                
+                <div class="progress-track">
+                    <div class="progress-fill" id="fill-bar"></div>
+                    <div class="marker" style="left: 25%"></div>
+                    <div class="marker" style="left: 50%"></div>
+                    <div class="marker" style="left: 75%"></div>
+                </div>
+
+                <div class="stage-list">
+                    <div class="stage-item" id="stage-0">
+                        <div class="stage-dot"></div> <div class="stage-pct">0%</div> <div>Mix</div>
+                    </div>
+                    <div class="stage-item" id="stage-25">
+                        <div class="stage-dot"></div> <div class="stage-pct">25%</div> <div>Microbial Wake Up (Lag Phase)</div>
+                    </div>
+                    <div class="stage-item" id="stage-50">
+                        <div class="stage-dot"></div> <div class="stage-pct">50%</div> <div>Probiotics Boom</div>
+                    </div>
+                    <div class="stage-item" id="stage-75">
+                        <div class="stage-dot"></div> <div class="stage-pct">75%</div> <div>Unlocks Nutrients</div>
+                    </div>
+                    <div class="stage-item" id="stage-100">
+                        <div class="stage-dot"></div> <div class="stage-pct">100%</div> <div>ANTI-NUTRIENTS BREAKDOWN (Ready)</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="timer-big" id="display">8:00</div>
+            <div class="timer-label">HOURS REMAINING</div>
+
+            <div class="hero-compare">
+                <div class="compare-box villain">
+                    <span class="c-icon">💀</span>
+                    <div class="c-title">INSTANT FOOD</div>
+                    <div class="c-stat" style="color:#FF453A">Causes Inflammation</div>
+                </div>
+                <div class="compare-box hero">
+                    <span class="c-icon">🧬</span>
+                    <div class="c-title">FERMENTED</div>
+                    <div class="c-stat" style="color:var(--primary)">Heals & Protects</div>
+                </div>
+            </div>
+
+            <button class="btn-main" id="main-btn" onclick="toggleTimer()">BEGIN ACTIVATION</button>
+        </div>
+    </div>
+
+    <div id="page-learn" class="page">
+        <h2 style="font-weight:900; font-size:2rem; margin-top:20px;">Why Wait?</h2>
+        
+        <div class="info-card" style="border-color:var(--primary);">
+            <span class="card-label" style="color:var(--primary);">SUPERPOWER</span>
+            <div class="card-head" id="learn-power">CRUSHES BLOOD SUGAR SPIKES</div>
+            <span class="card-sub">The 8-Hour Advantage</span>
+            <div class="card-body" id="learn-desc">
+                Instant mixes are dead starch. They spike your insulin immediately. 
+                <br><br>
+                Over 8 hours, our fermentation process <strong>pre-digests 40% of the carbs</strong> and creates a fiber mesh. When you eat this, your blood sugar stays flat.
+            </div>
+        </div>
+
+        <div class="info-card">
+            <span class="card-label">The Enemy</span>
+            <div class="card-head" style="color:#FFF;">PHYTIC ACID</div>
+            <div class="card-body">
+                Grains naturally contain Phytic Acid, which locks up minerals. If you don't ferment, you don't absorb Zinc, Iron, or Calcium. 
+                <br><br>
+                <strong>We wait so the enzymes can unlock these minerals for you.</strong>
+            </div>
+        </div>
+    </div>
+
+    <div id="page-routine" class="page">
+        <div class="battle-badge" id="tool-badge" style="margin-top:20px;">DIABETES PROTOCOL</div>
+        <h2 style="font-weight:900; font-size:2rem; margin:0 0 20px 0;">Active Defense</h2>
+
+        <div class="info-card" style="padding:0; overflow:hidden;">
+            <div style="padding:20px;">
+                <span class="card-label" id="game-title">GLUCOSE PACER</span>
+                <div class="card-body" id="game-desc">Walk at 110 steps/min after eating to burn sugar.</div>
+            </div>
+            
+            <div class="game-box" id="game-canvas"></div>
+            
+            <button class="btn-main" id="game-btn" style="border-radius:0;" onclick="toggleGame()">START ACTIVITY</button>
+        </div>
+
+        <div class="info-card">
+            <span class="card-label">Daily Health Tip</span>
+            <div class="card-body" id="tip-text" style="font-weight:700; color:#fff;">
+                Loading...
+            </div>
+        </div>
+    </div>
+
+    <div class="dock">
+        <div class="dock-item active" onclick="switchPage('home', this)"><span class="d-icon">⏱️</span>Timer</div>
+        <div class="dock-item" onclick="switchPage('learn', this)"><span class="d-icon">🧬</span>Science</div>
+        <div class="dock-item" onclick="switchPage('routine', this)"><span class="d-icon">⚡</span>Routine</div>
+    </div>
+
+    <script>
+        const db = {
+            foxtail: {
+                color: '#FFD60A', 
+                battle: '⚔️ FIGHTS DIABETES', 
+                title: 'Foxtail Gold', 
+                desc: 'Low GI Index (54). The ultimate defense against insulin spikes.',
+                power: 'CRUSHES BLOOD SUGAR SPIKES',
+                learnDesc: 'Instant mixes are dead starch. Our 8-hour fermentation pre-digests carbs to keep your blood sugar flat.',
+                gameType: 'pacer', 
+                gameTitle: 'GLUCOSE PACER', 
+                gameDesc: 'Walk immediately after eating to force muscles to absorb glucose.'
+            },
+            ragi: {
+                color: '#FF453A', 
+                battle: '⚔️ FIGHTS CHOLESTEROL', 
+                title: 'Ragi Ruby', 
+                desc: 'Packed with Lecithin to scrub liver fat and strengthen heart muscles.',
+                power: 'CLEANS YOUR ARTERIES',
+                learnDesc: 'Ragi contains Lecithin which dissolves fat. Fermentation activates this compound, making it a natural shield against cholesterol.',
+                gameType: 'breath', 
+                gameTitle: 'RESONANCE BREATHING', 
+                gameDesc: 'High stress = High BP. Sync your breath to lower cortisol immediately.'
+            },
+            jowar: {
+                color: '#30D158', 
+                battle: '⚔️ FIGHTS OBESITY', 
+                title: 'Jowar Emerald', 
+                desc: 'High Resistant Starch heals the gut lining and reduces bloating.',
+                power: 'ELIMINATES BLOATING',
+                learnDesc: 'Jowar is alkaline. Fermentation multiplies probiotics (Lactobacillus) which digest the food for you, so you feel light, not heavy.',
+                gameType: 'chew', 
+                gameTitle: 'MINDFUL CHEW TRACKER', 
+                gameDesc: 'Digestion starts in the mouth. Chew 20 times to prevent bloating.'
+            }
+        };
+
+        const tips = ["Eating protein first lowers sugar spike.", "Drink 300ml water 20 mins before meal.", "10-min brisk walk post-meal is key.", "Sleep < 7 hours increases insulin resistance.", "Fermented foods boost B12 naturally."];
+        let currentMillet='foxtail', timerInterval, gameInterval, isGameRunning=false;
+
+        function switchPage(id, el) {
+            document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+            document.getElementById('page-'+id).classList.add('active');
+            document.querySelectorAll('.dock-item').forEach(d => d.classList.remove('active'));
+            el.classList.add('active');
+            if(id === 'routine') renderGame(); else stopGame();
+        }
+
+        function switchMillet(millet) {
+            currentMillet = millet;
+            const data = db[millet];
+            
+            document.documentElement.style.setProperty('--primary', data.color);
+            document.documentElement.style.setProperty('--primary-dim', data.color + '22');
+
+            // Text Updates
+            document.getElementById('battle-badge').innerText = data.battle;
+            document.getElementById('tool-badge').innerText = data.battle.replace('⚔️ ', '') + ' PROTOCOL';
+            document.getElementById('grain-title').innerText = data.title;
+            document.getElementById('grain-desc').innerText = data.desc;
+            document.getElementById('learn-power').innerText = data.power;
+            document.getElementById('learn-desc').innerHTML = data.learnDesc;
+            document.getElementById('game-title').innerText = data.gameTitle;
+            document.getElementById('game-desc').innerText = data.gameDesc;
+
+            document.querySelectorAll('.nav-btn').forEach(b => b.classList.remove('active'));
+            document.getElementById('tab-'+millet).classList.add('active');
+            
+            // Badge Styling
+            const badge = document.getElementById('battle-badge');
+            badge.style.color = data.color;
+            badge.style.borderColor = data.color;
+            badge.style.background = data.color + '22';
+
+            checkTimer();
+            if(document.getElementById('page-routine').classList.contains('active')) renderGame();
+        }
+
+        function toggleTimer() {
+            const KEY = 'grain_start_' + currentMillet;
+            if(!localStorage.getItem(KEY)) {
+                localStorage.setItem(KEY, Date.now());
+                checkTimer();
+            } else {
+                if(confirm("Stop Activation?")) {
+                    localStorage.removeItem(KEY);
+                    checkTimer();
+                }
+            }
+        }
+
+        function checkTimer() {
+            const KEY = 'grain_start_' + currentMillet;
+            const start = localStorage.getItem(KEY);
+            
+            const display = document.getElementById('display');
+            const btn = document.getElementById('main-btn');
+            const fill = document.getElementById('fill-bar');
+            const pctText = document.getElementById('pct-display');
+
+            clearInterval(timerInterval);
+            document.querySelectorAll('.stage-item').forEach(s => s.classList.remove('active'));
+            fill.style.width = '0%';
+            pctText.innerText = '0%';
+
+            if(!start) {
+                display.innerText = "8:00";
+                btn.innerText = "BEGIN OVERNIGHT ACTIVATION";
+                btn.style.background = db[currentMillet].color;
+                document.getElementById('status-left').style.color = "#FFF";
+                document.getElementById('status-right').style.opacity = "0.3";
+                document.getElementById('stage-0').classList.add('active');
+                return;
+            }
+
+            btn.innerText = "CANCEL ACTIVATION";
+            btn.style.background = "#333";
+            document.getElementById('status-left').style.color = "#555";
+            document.getElementById('status-right').style.opacity = "1";
+
+            const total = 8 * 60 * 60 * 1000;
+            // const total = 20000; // Test mode: 20s
+
+            timerInterval = setInterval(() => {
+                const elapsed = Date.now() - parseInt(start);
+                const remain = total - elapsed;
+
+                if(remain <= 0) {
+                    clearInterval(timerInterval);
+                    display.innerText = "ALIVE";
+                    btn.innerText = "READY TO COOK";
+                    fill.style.width = '100%';
+                    pctText.innerText = '100%';
+                    highlightStages(100);
+                    return;
+                }
+
+                const h = Math.floor((remain / (1000 * 60 * 60)) % 24);
+                const m = Math.floor((remain / (1000 * 60)) % 60);
+                const s = Math.floor((remain / 1000) % 60);
+                display.innerText = `${h}:${m<10?'0'+m:m}:${s<10?'0'+s:s}`;
+
+                const pct = (elapsed / total) * 100;
+                fill.style.width = pct + '%';
+                pctText.innerText = Math.floor(pct) + '%';
+                highlightStages(pct);
+            }, 1000);
+        }
+
+        function highlightStages(pct) {
+            document.querySelectorAll('.stage-item').forEach(s => s.classList.remove('active'));
+            if(pct >= 100) document.getElementById('stage-100').classList.add('active');
+            else if(pct >= 75) document.getElementById('stage-75').classList.add('active');
+            else if(pct >= 50) document.getElementById('stage-50').classList.add('active');
+            else if(pct >= 25) document.getElementById('stage-25').classList.add('active');
+            else document.getElementById('stage-0').classList.add('active');
+        }
+
+        function renderGame() {
+            const area = document.getElementById('game-canvas');
+            const type = db[currentMillet].gameType;
+            area.innerHTML = '';
+            stopGame();
+            if(type === 'pacer') area.innerHTML = `<div class="pacer-track"><div class="pacer-ball" id="g-ball"></div></div>`;
+            else if (type === 'breath') area.innerHTML = `<div class="breath-ring" id="g-ring">INHALE</div>`;
+            else if (type === 'chew') area.innerHTML = `<div style="font-size:3rem;">🥗</div><div class="chew-bar-wrap"><div class="chew-fill" id="g-fill"></div></div><button onclick="addChew()" style="padding:10px 20px; border-radius:20px; background:#333; color:#fff; border:none;">SWALLOW</button>`;
+        }
+
+        function toggleGame() {
+            if(isGameRunning) { stopGame(); return; }
+            isGameRunning = true;
+            document.getElementById('game-btn').innerText = "STOP";
+            const type = db[currentMillet].gameType;
+            if(type === 'pacer') { const ball=document.getElementById('g-ball'); let s=false; gameInterval=setInterval(()=>{ s=!s; ball.style.left=s?'90%':'0%'; },545); }
+            else if (type === 'breath') { const ring=document.getElementById('g-ring'); let p=0; const loop=()=>{ if(p===0){ring.innerText="INHALE";ring.style.transform="scale(1.5)";ring.style.transition="4s";setTimeout(()=>p=1,4000);}else if(p===1){ring.innerText="HOLD";setTimeout(()=>p=2,7000);}else{ring.innerText="EXHALE";ring.style.transform="scale(1)";ring.style.transition="8s";setTimeout(()=>p=0,8000);} }; loop(); gameInterval=setInterval(loop,19000); }
+        }
+
+        function addChew() { if(!isGameRunning)return; const f=document.getElementById('g-fill'); let w=parseFloat(f.style.width)||0; w+=5; f.style.width=w+'%'; if(w>=100){f.style.background='#FFF'; setTimeout(()=>{f.style.width='0%';f.style.background=db[currentMillet].color;},500);} }
+        function stopGame() { isGameRunning=false; clearInterval(gameInterval); document.getElementById('game-btn').innerText="START ACTIVITY"; }
+
+        const day = Math.floor((new Date()-new Date(new Date().getFullYear(),0,0))/(1000*60*60*24));
+        document.getElementById('tip-text').innerText = tips[day % tips.length];
+        switchMillet('foxtail');
+    </script>
+</body>
+</html>
